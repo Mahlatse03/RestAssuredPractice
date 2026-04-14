@@ -46,17 +46,4 @@ public class UserRequestBuilder {
         // Code to send a POST request to create an instructor
     }
 
-    public static  Response approveUserRegistration(String registeredUserId) {
-
-        String apiPath = "/APIDEV/admin/users/"+registeredUserId+"/approve";
-        return given()
-                .pathParam("registeredUserId", registeredUserId)
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", "Bearer " + userToken)
-                .when()
-                .post()
-                .then().extract().response();
-        // Code to send a PUT request to approve the instructor registration
-    }
 }
