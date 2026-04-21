@@ -4,8 +4,12 @@ import com.github.javafaker.Faker;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import requestBuilder.AdminRequestBuilder;
 import requestBuilder.UserRequestBuilder;
 import io.restassured.response.Response;
+import utils.DatabaseConnection;
+
+import java.sql.SQLException;
 
 @Test
 public class UserTests {
@@ -14,15 +18,19 @@ public class UserTests {
     static String lastName;
     static String password;
     static String registeredEmail;
+    static String newRoleId;
 
     static Faker faker = new Faker();
 
     @BeforeClass
-    public static void setupData() {
+    public static void setupData() throws SQLException {
         firstName = faker.name().firstName();
         lastName = faker.name().lastName();
-        registeredEmail = faker.internet().emailAddress();
+        registeredEmail = "Group2"+faker.internet().emailAddress();
         password = "7654321!";
+        newRoleId = "admin";
+
+        DatabaseConnection.dbConnection();
 
         System.out.println("First name:" + firstName);
         System.out.println("Last name: " + lastName);
@@ -45,7 +53,6 @@ public class UserTests {
      Response response = requestBuilder.AdminRequestBuilder.adminLogin();
      response.then().log().all();
      Assert.assertEquals(response.getStatusCode(),200);
-   //  requestBuilder.AdminRequestBuilder.adminToken = response.jsonPath().getString("data.token");
 
     }
 
@@ -54,7 +61,7 @@ public class UserTests {
             Response response = requestBuilder.AdminRequestBuilder.approveUser();
             response.then().log().all();
             Assert.assertEquals(response.getStatusCode(),200);
-        // Call the API to approve the user registration
+
     }
 
     @Test (priority = 4)
@@ -62,7 +69,29 @@ public class UserTests {
             Response response = UserRequestBuilder.userLogin(registeredEmail, password);
             response.then().log().all();
             Assert.assertEquals(response.getStatusCode(),200);
-        // Call the API to login using userPayload.getEmail() and userPayload.getPassword()
+
+    }
+
+    @Test (priority = 5)
+    public void testUserLoginWithInvalidCredentials() {
+        Response response = UserRequestBuilder.userLogin(registeredEmail, "invalidPassword");
+        response.then().log().all();
+        Assert.assertEquals(response.getStatusCode(),401);
+    }
+
+    @Test (priority = 6)
+    public void testUpdateUserRole() {
+        Response response = requestBuilder.AdminRequestBuilder.updateUserRole(newRoleId);
+        response.then().log().all();
+        Assert.assertEquals(response.getStatusCode(),200);
+    }
+
+    @Test(priority = 7)
+    public void testGetCourses(){
+        // Call the API to get courses and validate the response
+       Response response = AdminRequestBuilder.getCourses("beginner", "automation");
+        response.then().log().all();
+        Assert.assertEquals(response.getStatusCode(),200);
     }
 
 

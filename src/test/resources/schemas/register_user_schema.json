@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["success", "message", "data"],
+  "properties": {
+    "success": { "type": "boolean" },
+    "message": { "type": "string" },
+    "data": {
+      "type": "object",
+      "required": ["id", "firstName", "lastName", "email", "groupId", "groupName", "approvalStatus", "createdAt"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "firstName": { "type": "string", "minLength": 1 },
+        "lastName": { "type": "string", "minLength": 1 },
+        "email": { "type": "string", "format": "email" },
+        "groupId": { "type": "string", "minLength": 1 },
+        "groupName": { "type": "string", "minLength": 1 },
+        "approvalStatus": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}

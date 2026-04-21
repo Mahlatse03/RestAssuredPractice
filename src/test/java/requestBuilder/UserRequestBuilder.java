@@ -6,7 +6,7 @@ import io.restassured.response.Response;
 import static io.restassured.RestAssured.given;
 import static payloadBuilder.userPayload.loginUserPayload;
 import static payloadBuilder.userPayload.registerUserPayload;
-import static requestBuilder.Routes.BASE_URL;
+import static commons.Routes.BASE_URL;
 
 
 public class UserRequestBuilder {
@@ -43,7 +43,27 @@ public class UserRequestBuilder {
                 .then().extract().response();
         userToken = response.jsonPath().getString("data.token");
         return response;
+
+        //exmaple of validating before extracting
+      /*  Response response = given()
+                .when()
+                .get("/users")
+                .then()
+                .statusCode(200)  //validate first
+                .extract()        //then extract
+                .response();
+
+
+            //pull only one filed from response
+            String email = given()
+                    .when()
+                    .get("/users/1")
+                    .then()
+                    .extract()
+                    .path("data.email");*/
         // Code to send a POST request to create an instructor
     }
+
+
 
 }
