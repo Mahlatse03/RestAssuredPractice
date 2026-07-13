@@ -60,10 +60,8 @@ public class UserRequestBuilder {
                     .get("/users/1")
                     .then()
                     .extract()
-                    .path("data.email");*/
-        // Code to send a POST request to create an instructor
+                    .path("data.email");
+                    */
     }
-
-
 
 }

@@ -1,6 +1,8 @@
 package test;
 
 import com.github.javafaker.Faker;
+import io.qameta.allure.Severity;
+import io.qameta.allure.SeverityLevel;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -11,7 +13,9 @@ import utils.DatabaseConnection;
 
 import java.sql.SQLException;
 
-@Test
+import static org.hamcrest.CoreMatchers.equalTo;
+
+
 public class UserTests {
 
     static String firstName;
@@ -30,7 +34,7 @@ public class UserTests {
         password = "7654321!";
         newRoleId = "admin";
 
-        DatabaseConnection.dbConnection();
+        DatabaseConnection.dbConnection("playtest@gmail.com");
 
         System.out.println("First name:" + firstName);
         System.out.println("Last name: " + lastName);
@@ -48,6 +52,7 @@ public class UserTests {
     }
 
     @Test (priority = 2)
+    @Severity(SeverityLevel.CRITICAL)
     public void testAdminLogin() {
         // Call the API to login as admin and store the token for future use
      Response response = requestBuilder.AdminRequestBuilder.adminLogin();
@@ -58,40 +63,59 @@ public class UserTests {
 
     @Test (priority = 3)
     public void testUserApproval() {
-            Response response = requestBuilder.AdminRequestBuilder.approveUser();
-            response.then().log().all();
-            Assert.assertEquals(response.getStatusCode(),200);
+            requestBuilder.AdminRequestBuilder.approveUser()
+                .then()
+                    .log().all()
+                    .assertThat()
+                    .statusCode(200)
+                    .body("success", equalTo(true));
 
     }
 
     @Test (priority = 4)
     public void testUserLogin() {
-            Response response = UserRequestBuilder.userLogin(registeredEmail, password);
-            response.then().log().all();
-            Assert.assertEquals(response.getStatusCode(),200);
-
+        //not assigning to response as we are not using it, just validating the response
+            UserRequestBuilder.userLogin(DatabaseConnection.getEmailAddress, DatabaseConnection.getPassword)
+                .then()
+                    .log().all()
+                    .assertThat()
+                    .statusCode(200)
+                    .body("success", equalTo(true));
     }
 
     @Test (priority = 5)
     public void testUserLoginWithInvalidCredentials() {
-        Response response = UserRequestBuilder.userLogin(registeredEmail, "invalidPassword");
-        response.then().log().all();
-        Assert.assertEquals(response.getStatusCode(),401);
+        UserRequestBuilder.userLogin(registeredEmail, "invalidPassword")
+            .then()
+                .log().all()
+                .assertThat()
+                .statusCode(401)
+                .body("success", equalTo(false))
+                .body("message", equalTo("Invalid email or password"));
+
     }
 
     @Test (priority = 6)
     public void testUpdateUserRole() {
-        Response response = requestBuilder.AdminRequestBuilder.updateUserRole(newRoleId);
-        response.then().log().all();
-        Assert.assertEquals(response.getStatusCode(),200);
+        requestBuilder.AdminRequestBuilder.updateUserRole(newRoleId)
+        .then()
+                .log().all()
+                .assertThat()
+                .statusCode(200)
+                .body("success", equalTo(true))
+                .body("data.role", equalTo(newRoleId)); // use (.body("role", equalTo(newRoleId)); to get class to participate
     }
 
+   // @Test (dependsOnMethods = "testUpdateUserRole")
     @Test(priority = 7)
     public void testGetCourses(){
         // Call the API to get courses and validate the response
-       Response response = AdminRequestBuilder.getCourses("beginner", "automation");
-        response.then().log().all();
-        Assert.assertEquals(response.getStatusCode(),200);
+       AdminRequestBuilder.getCourses("beginner", "automation")
+         .then()
+            .log().all()
+            .assertThat()
+            .statusCode(200)
+            .body("success", equalTo(true));
     }
 
 
