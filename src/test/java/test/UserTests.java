@@ -1,8 +1,10 @@
 package test;
 
 import com.github.javafaker.Faker;
+import commons.Routes;
 import io.qameta.allure.Severity;
 import io.qameta.allure.SeverityLevel;
+import io.restassured.module.jsv.JsonSchemaValidator;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -11,9 +13,12 @@ import requestBuilder.UserRequestBuilder;
 import io.restassured.response.Response;
 import utils.DatabaseConnection;
 
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.testng.Assert.assertEquals;
 
 
 public class UserTests {
@@ -36,9 +41,9 @@ public class UserTests {
 
         DatabaseConnection.dbConnection("playtest@gmail.com");
 
-        System.out.println("First name:" + firstName);
-        System.out.println("Last name: " + lastName);
-        System.out.println("Registered email: " + registeredEmail);
+//        System.out.println("First name:" + firstName);
+//        System.out.println("Last name: " + lastName);
+//        System.out.println("Registered email: " + registeredEmail);
 
     }
 
@@ -72,16 +77,29 @@ public class UserTests {
 
     }
 
+//    @Test (priority = 4)
+//    public void testUserLogin() {
+//        //not assigning to response as we are not using it, just validating the response
+//      UserRequestBuilder.userLogin(DatabaseConnection.getEmailAddress, DatabaseConnection.getPassword)
+//                .then()
+//                .log().all()
+//                .assertThat()
+//                .statusCode(200)
+//                .body("success", equalTo(true));
+//    }
+
     @Test (priority = 4)
     public void testUserLogin() {
         //not assigning to response as we are not using it, just validating the response
-            UserRequestBuilder.userLogin(DatabaseConnection.getEmailAddress, DatabaseConnection.getPassword)
+        UserRequestBuilder.userLogin(DatabaseConnection.getEmailAddress, DatabaseConnection.getPassword)
+        //UserRequestBuilder.userLogin(registeredEmail, password)
                 .then()
-                    .log().all()
-                    .assertThat()
-                    .statusCode(200)
-                    .body("success", equalTo(true));
+                .log().all()
+                .assertThat()
+                .statusCode(200)
+                .body("success", equalTo(true));
     }
+
 
     @Test (priority = 5)
     public void testUserLoginWithInvalidCredentials() {
@@ -116,6 +134,32 @@ public class UserTests {
             .assertThat()
             .statusCode(200)
             .body("success", equalTo(true));
+    }
+
+    @Test(priority = 8)
+    public void validateRegisterResponseSchema() {
+        //generate email address specific for this test to avoid conflicts with other tests
+        String schemaValidatorEmail = "Schema"+faker.internet().emailAddress();
+        System.out.println("Schema email: " + schemaValidatorEmail);
+        // Act: call the register API
+       Response response = UserRequestBuilder.registerUserRequest(firstName, lastName, schemaValidatorEmail, password,
+               "5328c91e-fc40-11f0-8e00-5000e6331276");
+
+        // Assert: status code
+        //Assert.assertEquals(response.getStatusCode(), 201, "Expected HTTP 201 for user registration");
+
+        //Extract and print json schema from file
+//        try {
+//            String savedSchema = java.nio.file.Files.readString(
+//                    java.nio.file.Paths.get(Routes.JSON_SCHEMA_PATH, "register_user_schema.json"));
+//            System.out.println("Loaded JSON schema:\n" + savedSchema);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+        // Assert: JSON schema validation
+        String schemaPath = Paths.get(Routes.JSON_SCHEMA_PATH + "register_user_schema.json").toAbsolutePath().toString();
+        response.then().assertThat().body(JsonSchemaValidator.matchesJsonSchema(Paths.get(schemaPath).toFile()));
     }
 
 

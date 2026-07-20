@@ -25,31 +25,30 @@ public class AdminRequestBuilder {
 
     public static Response approveUser() {
 
-       /* String apiPath = "/APIDEV/admin/users/" + UserRequestBuilder.registeredUserId + "/approve";
+        String apiPath = "/APIDEV/admin/users/" + UserRequestBuilder.registeredUserId + "/approve";
         System.out.println("Approval API" + apiPath);
         return RestAssured.given()
                     .baseUri(BASE_URL)
                     .basePath(apiPath)
-                    .header("Content-Type", "application/json")
+                    .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + adminToken)
                     .log().all()
-                .when() //optional
-                    .put()
+                    .put() //discarded optional when()
                 .then()
-                    .extract().response();*/
+                    .extract().response();
 
-        String apiPath = "/APIDEV/admin/users/{userId}/approve";
+      /*  String apiPath = "/APIDEV/admin/users/{userId}/approve";
         return given()
                 .baseUri(BASE_URL)
                 .basePath(apiPath)
                 .pathParams("userId", UserRequestBuilder.registeredUserId)
-                .header("Content-Type", "application/json") //More flexible for custom or uncommon headers, Manually sets the HTTP header
+                .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + adminToken)
                 .log().all()
             .when()
                 .put()
             .then()
-                .extract().response();
+                .extract().response();*/
 
     }
 

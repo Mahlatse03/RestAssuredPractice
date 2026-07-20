@@ -38,6 +38,7 @@ public class UserRequestBuilder {
                 .basePath(apiPath)
                 .contentType(ContentType.JSON)
                 .accept(ContentType.JSON)
+                //.body(loginUserPayload(email, password))
                 .body(loginUserPayload(email, password))
                 .post()
                 .then().extract().response();
