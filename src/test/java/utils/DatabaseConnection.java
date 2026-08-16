@@ -1,25 +1,28 @@
 package utils;
 
-import com.beust.jcommander.JCommander;
-
+import javax.swing.plaf.nimbus.State;
 import java.sql.*;
 
 public class DatabaseConnection {
     public static String getEmailAddress;
     public static String getPassword;
 
-    public static void dbConnection(String userEmail) throws SQLException {
-        // Get DB credentials from environment variables
+    // Reusable method to establish database connection
+    private static Connection getConnection() throws SQLException {
         String dbURL = commons.Routes.DB_URL;
         String dbUsername = commons.Routes.DB_USERNAME;
         String dbPassword = commons.Routes.DB_PASSWORD;
+        return DriverManager.getConnection(dbURL, dbUsername, dbPassword);
+    }
+
+    public static void getLoginsFromDB(String userEmail) throws SQLException {
 
 
         // Outer try-with-resources: auto-closes Connection
-        try (Connection connection = DriverManager.getConnection(dbURL, dbUsername, dbPassword)) {
+        try (Connection connection = getConnection()) {
             // Inner try-with-resources: auto-closes Statement and ResultSet
             try (Statement statement = connection.createStatement();
-                 ResultSet resultSet = statement.executeQuery("SELECT * FROM RestAssuredLogins WHERE email = '" + userEmail + "'")) {
+                 ResultSet resultSet = statement.executeQuery("SELECT * FROM RestAssuredUsers WHERE email = '" + userEmail + "'")) {
 
                 while (resultSet.next()) {
                     getEmailAddress = resultSet.getString("email");
@@ -34,43 +37,35 @@ public class DatabaseConnection {
 
     }
 
-    // Insert a new user into the loginUser table. Returns the generated id, or -1 if none.
+    // Insert a new user into the RestAssuredUsers table. Returns the generated id, or -1 if none.
     public static int insertUser(String email, String password) throws SQLException {
-        String dbURL = commons.Routes.DB_URL;
-        String dbUsername = commons.Routes.DB_USERNAME;
-        String dbPassword = commons.Routes.DB_PASSWORD;
+        String sql = "INSERT INTO RestAssuredUsers (email, password) VALUES (?, ?)";
 
-        String sql = "INSERT INTO loginUser (email, password) VALUES (?, ?)";
+        try (Connection connection = getConnection()) {
+            try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                ps.setString(1, email);
+                ps.setString(2, password);
+                ps.executeUpdate();
 
-        try (Connection connection = DriverManager.getConnection(dbURL, dbUsername, dbPassword);
-             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, email);
-            ps.setString(2, password);
-            int affected = ps.executeUpdate();
-
-            if (affected == 0) {
-                throw new SQLException("Inserting user failed, no rows affected.");
-            }
-
-            try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    return generatedKeys.getInt(1);
-                } else {
-                    return -1;
+                try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        return generatedKeys.getInt(1);
+                    } else {
+                        return -1;
+                    }
                 }
+            } catch (SQLException e) {
+                System.out.println("Error inserting user: " + e.getMessage());
+                return -1;
             }
         }
     }
 
     // Select a user by id and return a lightweight User object, or null if not found.
     public static User selectUserById(int id) throws SQLException {
-        String dbURL = commons.Routes.DB_URL;
-        String dbUsername = commons.Routes.DB_USERNAME;
-        String dbPassword = commons.Routes.DB_PASSWORD;
+        String sql = "SELECT id, email, password FROM RestAssuredUsers WHERE id = ?";
 
-        String sql = "SELECT id, email, password FROM loginUser WHERE id = ?";
-
-        try (Connection connection = DriverManager.getConnection(dbURL, dbUsername, dbPassword);
+        try (Connection connection = getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {

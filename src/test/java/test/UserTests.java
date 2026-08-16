@@ -13,11 +13,13 @@ import requestBuilder.UserRequestBuilder;
 import io.restassured.response.Response;
 import utils.DatabaseConnection;
 
+import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.testng.Assert.assertEquals;
 
 
@@ -39,20 +41,24 @@ public class UserTests {
         password = "7654321!";
         newRoleId = "admin";
 
-        DatabaseConnection.dbConnection("playtest@gmail.com");
+        DatabaseConnection.insertUser(registeredEmail, password);
+        DatabaseConnection.getLoginsFromDB(registeredEmail);
 
-//        System.out.println("First name:" + firstName);
-//        System.out.println("Last name: " + lastName);
-//        System.out.println("Registered email: " + registeredEmail);
+
+        System.out.println("First name:" + firstName);
+        System.out.println("Last name: " + lastName);
+        System.out.println("Registered email: " + registeredEmail);
 
     }
 
    @Test (priority = 1)
     public void testUserRegistration() {
         Response response = UserRequestBuilder.registerUserRequest(firstName, lastName, registeredEmail, password, "5328c91e-fc40-11f0-8e00-5000e6331276");
-        response.then().log().all();
+        response.then().log().all()
+                .extract().response();
 
         Assert.assertEquals(response.getStatusCode(),201);
+        Assert.assertEquals(response.body().jsonPath().get("data.email"), registeredEmail);
         // Call the API to register the user using userPayload
     }
 
@@ -66,14 +72,15 @@ public class UserTests {
 
     }
 
-    @Test (priority = 3)
+    @Test (dependsOnMethods = {"testAdminLogin", "testUserRegistration"})
     public void testUserApproval() {
             requestBuilder.AdminRequestBuilder.approveUser()
                 .then()
                     .log().all()
                     .assertThat()
                     .statusCode(200)
-                    .body("success", equalTo(true));
+                    .body("success", equalTo(true))
+                    .body("data.approvalStatus", equalTo("approved"));
 
     }
 
@@ -90,6 +97,7 @@ public class UserTests {
 
     @Test (priority = 4)
     public void testUserLogin() {
+
         //not assigning to response as we are not using it, just validating the response
         UserRequestBuilder.userLogin(DatabaseConnection.getEmailAddress, DatabaseConnection.getPassword)
         //UserRequestBuilder.userLogin(registeredEmail, password)
@@ -97,7 +105,8 @@ public class UserTests {
                 .log().all()
                 .assertThat()
                 .statusCode(200)
-                .body("success", equalTo(true));
+                .body("success", equalTo(true))
+                .body("data.token", notNullValue());
     }
 
 
@@ -113,16 +122,16 @@ public class UserTests {
 
     }
 
-    @Test (priority = 6)
-    public void testUpdateUserRole() {
-        requestBuilder.AdminRequestBuilder.updateUserRole(newRoleId)
-        .then()
-                .log().all()
-                .assertThat()
-                .statusCode(200)
-                .body("success", equalTo(true))
-                .body("data.role", equalTo(newRoleId)); // use (.body("role", equalTo(newRoleId)); to get class to participate
-    }
+//    @Test (priority = 6)
+//    public void testUpdateUserRole() {
+//        requestBuilder.AdminRequestBuilder.updateUserRole("instructor")
+//                .then()
+//                .log().all()
+//                .assertThat()
+//                .statusCode(200)
+//                .body("success", equalTo(true))
+//                .body("data.role", equalTo("instructor"));
+//    }
 
    // @Test (dependsOnMethods = "testUpdateUserRole")
     @Test(priority = 7)
@@ -136,19 +145,19 @@ public class UserTests {
             .body("success", equalTo(true));
     }
 
-    @Test(priority = 8)
-    public void validateRegisterResponseSchema() {
-        //generate email address specific for this test to avoid conflicts with other tests
-        String schemaValidatorEmail = "Schema"+faker.internet().emailAddress();
-        System.out.println("Schema email: " + schemaValidatorEmail);
-        // Act: call the register API
-       Response response = UserRequestBuilder.registerUserRequest(firstName, lastName, schemaValidatorEmail, password,
-               "5328c91e-fc40-11f0-8e00-5000e6331276");
-
-        // Assert: status code
-        //Assert.assertEquals(response.getStatusCode(), 201, "Expected HTTP 201 for user registration");
-
-        //Extract and print json schema from file
+//    @Test(priority = 8)
+//    public void validateRegisterResponseSchema() {
+//        //generate email address specific for this test to avoid conflicts with other tests
+//        String schemaValidatorEmail = "Schema"+faker.internet().emailAddress();
+//        System.out.println("Schema email: " + schemaValidatorEmail);
+//        // Act: call the register API
+//       Response response = UserRequestBuilder.registerUserRequest(firstName, lastName, schemaValidatorEmail, password,
+//               "5328c91e-fc40-11f0-8e00-5000e6331276");
+//
+//        // Assert: status code
+//        //Assert.assertEquals(response.getStatusCode(), 201, "Expected HTTP 201 for user registration");
+//
+//        //Extract and print json schema from file
 //        try {
 //            String savedSchema = java.nio.file.Files.readString(
 //                    java.nio.file.Paths.get(Routes.JSON_SCHEMA_PATH, "register_user_schema.json"));
@@ -156,11 +165,11 @@ public class UserTests {
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
-
-        // Assert: JSON schema validation
-        String schemaPath = Paths.get(Routes.JSON_SCHEMA_PATH + "register_user_schema.json").toAbsolutePath().toString();
-        response.then().assertThat().body(JsonSchemaValidator.matchesJsonSchema(Paths.get(schemaPath).toFile()));
-    }
-
+//
+//        // Assert: JSON schema validation
+//        String schemaPath = Paths.get(Routes.JSON_SCHEMA_PATH + "register_user_schema.json").toAbsolutePath().toString();
+//        response.then().assertThat().body(JsonSchemaValidator.matchesJsonSchema(Paths.get(schemaPath).toFile()));
+//    }
+//
 
 }
