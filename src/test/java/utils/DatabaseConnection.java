@@ -1,6 +1,5 @@
 package utils;
 
-import javax.swing.plaf.nimbus.State;
 import java.sql.*;
 
 public class DatabaseConnection {
@@ -15,87 +14,46 @@ public class DatabaseConnection {
         return DriverManager.getConnection(dbURL, dbUsername, dbPassword);
     }
 
-    public static void getLoginsFromDB(String userEmail) throws SQLException {
-
-
-        // Outer try-with-resources: auto-closes Connection
-        try (Connection connection = getConnection()) {
-            // Inner try-with-resources: auto-closes Statement and ResultSet
-            try (Statement statement = connection.createStatement();
-                 ResultSet resultSet = statement.executeQuery("SELECT * FROM RestAssuredUsers WHERE email = '" + userEmail + "'")) {
-
-                while (resultSet.next()) {
-                    getEmailAddress = resultSet.getString("email");
-                    getPassword = resultSet.getString("password");
-                    System.out.println("Email: " + getEmailAddress + ", Password: " + getPassword);
-                }
-            } catch (SQLException e) {
-                System.out.println("Error executing query: " + e.getMessage());
-            }// Connection auto-closes here, even if exception occurs, preventing connection leaks
-            //No manual close() calls needed—the JVM handles cleanup automatically
-        }
-
-    }
-
     // Insert a new user into the RestAssuredUsers table. Returns the generated id, or -1 if none.
-    public static int insertUser(String email, String password) throws SQLException {
-        String sql = "INSERT INTO RestAssuredUsers (email, password) VALUES (?, ?)";
+    public static void insertUser(String email, String password) throws SQLException {
 
         try (Connection connection = getConnection()) {
-            try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            try (PreparedStatement ps = connection.prepareStatement
+                    ("INSERT INTO RestAssuredUsers (email, password) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+                // Set the parameters for the prepared statement
                 ps.setString(1, email);
                 ps.setString(2, password);
                 ps.executeUpdate();
 
                 try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
-                        return generatedKeys.getInt(1);
-                    } else {
-                        return -1;
+                        System.out.println("Generated record key: " + generatedKeys.getInt(1));
                     }
                 }
             } catch (SQLException e) {
                 System.out.println("Error inserting user: " + e.getMessage());
-                return -1;
             }
         }
     }
 
-    // Select a user by id and return a lightweight User object, or null if not found.
-    public static User selectUserById(int id) throws SQLException {
-        String sql = "SELECT id, email, password FROM RestAssuredUsers WHERE id = ?";
-
-        try (Connection connection = getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    int foundId = rs.getInt("id");
-                    String email = rs.getString("email");
-                    String password = rs.getString("password");
-                    return new User(foundId, email, password);
-                } else {
-                    return null;
+    public static void getLoginsFromDB(String userEmail) throws SQLException {
+        // Outer try-with-resources: auto-closes Connection
+        try (Connection connection = getConnection()) {
+            // Inner try-with-resources: auto-closes PreparedStatement
+            try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM RestAssuredUsers WHERE email = ?")) {
+                ps.setString(1, userEmail);
+                try (ResultSet resultSet = ps.executeQuery()) {
+                    while (resultSet.next()) {
+                        getEmailAddress = resultSet.getString("email");
+                        getPassword = resultSet.getString("password");
+                        System.out.println("Email from DB: " + getEmailAddress );
+                    }
                 }
+            } catch (SQLException e) {
+                System.out.println("Error executing query: " + e.getMessage());
             }
         }
+
     }
 
-    // Simple container for user data returned from selectUserById
-    public static class User {
-        public final int id;
-        public final String email;
-        public final String password;
-
-        public User(int id, String email, String password) {
-            this.id = id;
-            this.email = email;
-            this.password = password;
-        }
-
-        @Override
-        public String toString() {
-            return "User{id=" + id + ", email='" + email + "', password='" + password + "'}";
-        }
-    }
 }

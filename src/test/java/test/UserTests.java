@@ -49,6 +49,7 @@ public class UserTests {
         System.out.println("Last name: " + lastName);
         System.out.println("Registered email: " + registeredEmail);
 
+
     }
 
    @Test (priority = 1)
