@@ -15,6 +15,7 @@ import utils.DatabaseConnection;
 
 import javax.xml.crypto.Data;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 
@@ -34,15 +35,15 @@ public class UserTests {
     static Faker faker = new Faker();
 
     @BeforeClass
-    public static void setupData() throws SQLException {
+    public static void setupData() {
         firstName = faker.name().firstName();
         lastName = faker.name().lastName();
         registeredEmail = "Group2"+faker.internet().emailAddress();
         password = "7654321!";
         newRoleId = "admin";
 
-        DatabaseConnection.insertUser(registeredEmail, password);
-        DatabaseConnection.getLoginsFromDB(registeredEmail);
+//        DatabaseConnection.insertUser(registeredEmail, password);
+//        DatabaseConnection.getLoginsFromDB(registeredEmail);
 
 
         System.out.println("First name:" + firstName);
@@ -53,10 +54,13 @@ public class UserTests {
     }
 
    @Test (priority = 1)
-    public void testUserRegistration() {
+    public void testUserRegistration() throws SQLException {
         Response response = UserRequestBuilder.registerUserRequest(firstName, lastName, registeredEmail, password, "5328c91e-fc40-11f0-8e00-5000e6331276");
         response.then().log().all()
                 .extract().response();
+
+        //Add registered user to DB
+        DatabaseConnection.insertUser(registeredEmail, password);
 
         Assert.assertEquals(response.getStatusCode(),201);
         Assert.assertEquals(response.body().jsonPath().get("data.email"), registeredEmail);
@@ -97,8 +101,10 @@ public class UserTests {
 //    }
 
     @Test (priority = 4)
-    public void testUserLogin() {
+    public void testUserLogin() throws SQLException {
 
+        //Connect to the database and retrieve the email and password for the registered user
+        DatabaseConnection.getLoginsFromDB(registeredEmail);
         //not assigning to response as we are not using it, just validating the response
         UserRequestBuilder.userLogin(DatabaseConnection.getEmailAddress, DatabaseConnection.getPassword)
         //UserRequestBuilder.userLogin(registeredEmail, password)
@@ -146,31 +152,30 @@ public class UserTests {
             .body("success", equalTo(true));
     }
 
-//    @Test(priority = 8)
-//    public void validateRegisterResponseSchema() {
-//        //generate email address specific for this test to avoid conflicts with other tests
-//        String schemaValidatorEmail = "Schema"+faker.internet().emailAddress();
-//        System.out.println("Schema email: " + schemaValidatorEmail);
-//        // Act: call the register API
-//       Response response = UserRequestBuilder.registerUserRequest(firstName, lastName, schemaValidatorEmail, password,
-//               "5328c91e-fc40-11f0-8e00-5000e6331276");
-//
-//        // Assert: status code
-//        //Assert.assertEquals(response.getStatusCode(), 201, "Expected HTTP 201 for user registration");
-//
-//        //Extract and print json schema from file
-//        try {
-//            String savedSchema = java.nio.file.Files.readString(
-//                    java.nio.file.Paths.get(Routes.JSON_SCHEMA_PATH, "register_user_schema.json"));
-//            System.out.println("Loaded JSON schema:\n" + savedSchema);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        // Assert: JSON schema validation
-//        String schemaPath = Paths.get(Routes.JSON_SCHEMA_PATH + "register_user_schema.json").toAbsolutePath().toString();
-//        response.then().assertThat().body(JsonSchemaValidator.matchesJsonSchema(Paths.get(schemaPath).toFile()));
-//    }
-//
+    @Test(priority = 8)
+    public void validateRegisterResponseSchema() {
+        //generate email address specific for this test to avoid conflicts with other tests
+        String schemaValidatorEmail = "Schema"+faker.internet().emailAddress();
+        System.out.println("Schema email: " + schemaValidatorEmail);
+        // Act: call the register API
+       Response response = UserRequestBuilder.registerUserRequest(firstName, lastName, schemaValidatorEmail, password,
+               "5328c91e-fc40-11f0-8e00-5000e6331276");
+
+        // Assert: status code
+        //Assert.assertEquals(response.getStatusCode(), 201, "Expected HTTP 201 for user registration");
+
+        //using java.nio.file.Files and Paths to read the schema file
+        try {
+            String savedSchema = Files.readString(
+                    Paths.get(Routes.JSON_SCHEMA_PATH, "register_user_schema.json"));
+            System.out.println("Loaded JSON schema:\n" + savedSchema);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Assert: JSON schema validation
+        String schemaPath = Paths.get(Routes.JSON_SCHEMA_PATH + "register_user_schema.json").toAbsolutePath().toString();
+        response.then().assertThat().body(JsonSchemaValidator.matchesJsonSchema(Paths.get(schemaPath).toFile()));
+    }
 
 }
