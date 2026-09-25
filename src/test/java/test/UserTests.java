@@ -129,16 +129,16 @@ public class UserTests {
 
     }
 
-//    @Test (priority = 6)
-//    public void testUpdateUserRole() {
-//        requestBuilder.AdminRequestBuilder.updateUserRole("instructor")
-//                .then()
-//                .log().all()
-//                .assertThat()
-//                .statusCode(200)
-//                .body("success", equalTo(true))
-//                .body("data.role", equalTo("instructor"));
-//    }
+    @Test (priority = 6)
+    public void testUpdateUserRole() {
+        requestBuilder.AdminRequestBuilder.updateUserRole("instructor")
+                .then()
+                .log().all()
+                .assertThat()
+                .statusCode(200)
+                .body("success", equalTo(true))
+                .body("data.role", equalTo("instructor"));
+    }
 
    // @Test (dependsOnMethods = "testUpdateUserRole")
     @Test(priority = 7)
