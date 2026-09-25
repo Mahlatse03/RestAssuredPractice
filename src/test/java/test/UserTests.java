@@ -129,16 +129,16 @@ public class UserTests {
 
     }
 
-//    @Test (priority = 6)
-//    public void testUpdateUserRole() {
-//        requestBuilder.AdminRequestBuilder.updateUserRole("instructor")
-//                .then()
-//                .log().all()
-//                .assertThat()
-//                .statusCode(200)
-//                .body("success", equalTo(true))
-//                .body("data.role", equalTo("instructor"));
-//    }
+    @Test (priority = 6)
+    public void testUpdateUserRole() {
+        requestBuilder.AdminRequestBuilder.updateUserRole("instructor")
+                .then()
+                .log().all()
+                .assertThat()
+                .statusCode(200)
+                .body("success", equalTo(true))
+                .body("data.role", equalTo("instructor"));
+    }
 
    // @Test (dependsOnMethods = "testUpdateUserRole")
     @Test(priority = 7)
@@ -176,6 +176,11 @@ public class UserTests {
         // Assert: JSON schema validation
         String schemaPath = Paths.get(Routes.JSON_SCHEMA_PATH + "register_user_schema.json").toAbsolutePath().toString();
         response.then().assertThat().body(JsonSchemaValidator.matchesJsonSchema(Paths.get(schemaPath).toFile()));
+    }
+
+    public void printTestMethod(){
+
+        System.out.println("This is a test method");
     }
 
 }
