@@ -178,4 +178,9 @@ public class UserTests {
         response.then().assertThat().body(JsonSchemaValidator.matchesJsonSchema(Paths.get(schemaPath).toFile()));
     }
 
+    public void printTestMethod(){
+
+        System.out.println("This is a test method");
+    }
+
 }
